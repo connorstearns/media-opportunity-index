@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+plotly
+sqlalchemy        # if your `database.py` uses SQLAlchemy (likely, because of db.engine)
+openpyxl          # for Excel (.xlsx) export used via pandas in moi_utils
