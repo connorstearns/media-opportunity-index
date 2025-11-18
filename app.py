@@ -384,7 +384,8 @@ def weights_settings_ui(key_prefix: str = ""):
         use_custom_thresholds = st.checkbox(
             "Override auto percentiles",
             value=False,
-            help="Manually set tier thresholds instead of using calculated percentiles"
+            help="Manually set tier thresholds instead of using calculated percentiles",
+            key=k("override_thresholds")
         )
         
         custom_thresholds = None
