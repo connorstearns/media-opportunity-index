@@ -261,10 +261,14 @@ def column_mapping_ui(df, analysis_type):
     return mapping
 
 
-def weights_settings_ui():
+def weights_settings_ui(key_prefix: str = ""):
     """Create weights and settings UI."""
     st.subheader("⚖️ Weights & Settings")
     
+    # helper so we don't repeat f-strings
+    def k(name: str) -> str:
+        return f"{key_prefix}_{name}" if key_prefix else name
+
     col1, col2 = st.columns([3, 1])
     
     with col1:
@@ -276,14 +280,14 @@ def weights_settings_ui():
             toggle_rev = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_rev_per_restaurant'],
-                key='toggle_rev'
+                key=k('toggle_rev')
             )
             weight_rev = st.slider(
                 "Revenue/Restaurant",
                 0, 100,
                 st.session_state.current_weights['w_rev_per_restaurant'],
                 disabled=not toggle_rev,
-                key='slider_rev'
+                key=k('slider_rev')
             )
             if not toggle_rev:
                 weight_rev = 0
@@ -292,14 +296,14 @@ def weights_settings_ui():
             toggle_search = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_pct_sales_search'],
-                key='toggle_search'
+                key=k('toggle_search')
             )
             weight_search = st.slider(
                 "% Sales Search",
                 0, 100,
                 st.session_state.current_weights['w_pct_sales_search'],
                 disabled=not toggle_search,
-                key='slider_search'
+                key=k('slider_search')
             )
             if not toggle_search:
                 weight_search = 0
@@ -308,14 +312,14 @@ def weights_settings_ui():
             toggle_meta_reach = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_meta_reach_opportunity'],
-                key='toggle_meta_reach'
+                key=k('toggle_meta_reach')
             )
             weight_meta_reach = st.slider(
                 "Meta Reach Opp",
                 0, 100,
                 st.session_state.current_weights['w_meta_reach_opportunity'],
                 disabled=not toggle_meta_reach,
-                key='slider_meta_reach'
+                key=k('slider_meta_reach')
             )
             if not toggle_meta_reach:
                 weight_meta_reach = 0
@@ -324,14 +328,14 @@ def weights_settings_ui():
             toggle_tiktok_reach = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_tiktok_reach_opportunity'],
-                key='toggle_tiktok_reach'
+                key=k('toggle_tiktok_reach')
             )
             weight_tiktok_reach = st.slider(
                 "TikTok Reach Opp",
                 0, 100,
                 st.session_state.current_weights['w_tiktok_reach_opportunity'],
                 disabled=not toggle_tiktok_reach,
-                key='slider_tiktok_reach'
+                key=k('slider_tiktok_reach')
             )
             if not toggle_tiktok_reach:
                 weight_tiktok_reach = 0
@@ -340,14 +344,14 @@ def weights_settings_ui():
             toggle_digital = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_untapped_digital_share'],
-                key='toggle_digital'
+                key=k('toggle_digital')
             )
             weight_digital = st.slider(
                 "Untapped Digital",
                 0, 100,
                 st.session_state.current_weights['w_untapped_digital_share'],
                 disabled=not toggle_digital,
-                key='slider_digital'
+                key=k('slider_digital')
             )
             if not toggle_digital:
                 weight_digital = 0
@@ -356,14 +360,14 @@ def weights_settings_ui():
             toggle_spend = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_spend_opportunity'],
-                key='toggle_spend'
+                key=k('toggle_spend')
             )
             weight_spend = st.slider(
                 "Spend Opportunity",
                 0, 100,
                 st.session_state.current_weights['w_spend_opportunity'],
                 disabled=not toggle_spend,
-                key='slider_spend'
+                key=k('slider_spend')
             )
             if not toggle_spend:
                 weight_spend = 0
@@ -600,21 +604,28 @@ def display_results(results_df, grouping_col, max_values, thresholds):
     st.write("**Interactive Results Table**")
     st.write("Sort by clicking column headers. Use filters in the sidebar.")
     
-    display_cols = [grouping_col, 'MOI', 'MOI_Index', 'Tier',
-                    'revenue_per_restaurant_norm', 'pct_sales_search_norm',
-                    'reach_opportunity_norm', 'untapped_digital_norm', 'spend_opportunity_norm']
+    display_cols = [
+        grouping_col, 'MOI', 'MOI_Index', 'Tier',
+        'revenue_per_restaurant_norm',
+        'pct_sales_search_norm',
+        'meta_reach_opportunity_norm',
+        'tiktok_reach_opportunity_norm',
+        'untapped_digital_norm',
+        'spend_opportunity_norm'
+    ]
     
     display_cols = [col for col in display_cols if col in results_df.columns]
     
     display_df = results_df[display_cols].sort_values('MOI', ascending=False)
-    
+
     st.dataframe(
         display_df.style.format({
             'MOI': '{:.4f}',
             'MOI_Index': '{:.2f}',
             'revenue_per_restaurant_norm': '{:.4f}',
             'pct_sales_search_norm': '{:.4f}',
-            'reach_opportunity_norm': '{:.4f}',
+            'meta_reach_opportunity_norm': '{:.4f}',
+            'tiktok_reach_opportunity_norm': '{:.4f}',
             'untapped_digital_norm': '{:.4f}',
             'spend_opportunity_norm': '{:.4f}'
         }),
@@ -865,7 +876,10 @@ def analysis_tab(analysis_type):
                 if mapping:
                     st.divider()
                     
-                    weights, total_weight, custom_thresholds = weights_settings_ui()
+                    weights, total_weight, custom_thresholds = weights_settings_ui(
+                        key_prefix=analysis_type.lower()
+                    )
+
                     
                     st.divider()
                     
@@ -915,7 +929,10 @@ def analysis_tab(analysis_type):
             if mapping:
                 st.divider()
                 
-                weights, total_weight, custom_thresholds = weights_settings_ui()
+                weights, total_weight, custom_thresholds = weights_settings_ui(
+                    key_prefix=analysis_type.lower()
+                )
+
                 
                 st.divider()
                 
