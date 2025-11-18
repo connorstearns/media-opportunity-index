@@ -452,7 +452,6 @@ def create_download_excel(df: pd.DataFrame, sheet_name: str = 'MOI Results') -> 
 def create_methodology_pdf(
     analysis_type: str,
     weights: Dict[str, float],
-    reach_method: str,
     max_values: Dict[str, float],
     thresholds: Dict[str, float],
     num_markets: int,
@@ -464,7 +463,6 @@ def create_methodology_pdf(
     Args:
         analysis_type: Type of analysis (DMA or County)
         weights: Weight configuration
-        reach_method: Reach blend method used
         max_values: Max values used for normalization
         thresholds: Percentile thresholds
         num_markets: Number of markets analyzed
@@ -513,14 +511,14 @@ def create_methodology_pdf(
     
     story.append(Paragraph("MOI Formula", heading_style))
     story.append(Paragraph(
-        "The Media Opportunity Index is calculated as a weighted composite score combining five normalized components:",
+        "The Media Opportunity Index is calculated as a weighted composite score combining up to six normalized components:",
         styles['Normal']
     ))
     story.append(Spacer(1, 0.1*inch))
     
     formula_text = """
-    <b>MOI = w₁ × Revenue_norm + w₂ × Search_Sales_norm + w₃ × Reach_Opportunity_norm 
-          + w₄ × Untapped_Digital_norm + w₅ × Spend_Opportunity_norm</b>
+    <b>MOI = w₁ × Revenue_norm + w₂ × Search_Sales_norm + w₃ × Meta_Reach_Opp_norm 
+          + w₄ × TikTok_Reach_Opp_norm + w₅ × Untapped_Digital_norm + w₆ × Spend_Opportunity_norm</b>
     """
     story.append(Paragraph(formula_text, styles['Normal']))
     story.append(Spacer(1, 0.2*inch))
@@ -559,17 +557,7 @@ def create_methodology_pdf(
         "<b>Inverted Normalization</b> (lower represents opportunity): 1 - (value / max(value))",
         styles['Normal']
     ))
-    story.append(Paragraph("Applied to: Reach Saturation, Digital Share, Ad Spend", styles['Normal']))
-    story.append(Spacer(1, 0.2*inch))
-    
-    story.append(Paragraph("Reach Blend Method", heading_style))
-    story.append(Paragraph(f"<b>Method Used:</b> {reach_method.upper()}", styles['Normal']))
-    if reach_method == 'average':
-        story.append(Paragraph("Reach Blend = (Meta Reach + TikTok Reach) / 2", styles['Normal']))
-    elif reach_method == 'weighted':
-        story.append(Paragraph("Reach Blend = Meta Weight × Meta Reach + (1 - Meta Weight) × TikTok Reach", styles['Normal']))
-    elif reach_method == 'max':
-        story.append(Paragraph("Reach Blend = MAX(Meta Reach, TikTok Reach)", styles['Normal']))
+    story.append(Paragraph("Applied to: Meta Reach Saturation, TikTok Reach Saturation, Digital Share, Ad Spend", styles['Normal']))
     story.append(Spacer(1, 0.3*inch))
     
     story.append(Paragraph("Normalization Max Values", heading_style))
@@ -637,11 +625,10 @@ def create_methodology_pdf(
         "1. <b>CSV Upload</b>: User uploads market-level data",
         "2. <b>Column Mapping</b>: Automatic detection and manual mapping of required fields",
         "3. <b>Data Cleaning</b>: Parse currency ($), percentages (%), and reach rates (0-1)",
-        "4. <b>Reach Blending</b>: Combine Meta and TikTok reach saturation",
-        "5. <b>Normalization</b>: Apply direct/inverted normalization using max values",
-        "6. <b>MOI Computation</b>: Calculate weighted composite score",
-        "7. <b>MOI Index</b>: Scale to 0-100 range",
-        "8. <b>Tier Assignment</b>: Bucket by percentiles into opportunity tiers"
+        "4. <b>Normalization</b>: Apply direct/inverted normalization using max values",
+        "5. <b>MOI Computation</b>: Calculate weighted composite score with up to 6 components",
+        "6. <b>MOI Index</b>: Scale to 0-100 range",
+        "7. <b>Tier Assignment</b>: Bucket by percentiles into opportunity tiers"
     ]
     
     for step in pipeline_steps:
