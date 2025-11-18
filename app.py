@@ -430,8 +430,12 @@ def weights_settings_ui(key_prefix: str = ""):
     
     preset_col1, preset_col2 = st.columns(2)
     with preset_col1:
-        preset_name = st.text_input("Preset Name", placeholder="e.g., Growth Focus")
-        if st.button("💾 Save Preset") and preset_name:
+        preset_name = st.text_input(
+            "Preset Name",
+            placeholder="e.g., Growth Focus",
+            key=k("preset_name")
+        )
+        if st.button("💾 Save Preset", key=k("save_preset")) and preset_name:
             st.session_state.weight_presets[preset_name] = weights.copy()
             st.success(f"Saved preset: {preset_name}")
     
@@ -679,7 +683,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
     return display_df
 
 
-def download_buttons(results_df, analysis_type, mapping=None, weights=None, max_values=None, thresholds=None, custom_thresholds=None):
+def download_buttons(results_df, analysis_type, mapping=None, weights=None, max_values=None, thresholds=None, custom_thresholds=None, key_prefix: str = ""):
     """Create download buttons for CSV and XLSX."""
     st.subheader("⬇️ Download Results")
     
@@ -729,13 +733,19 @@ def download_buttons(results_df, analysis_type, mapping=None, weights=None, max_
             snapshot_name = st.text_input(
                 "Snapshot Name",
                 value=f"{analysis_type}_{datetime.now().strftime('%Y%m%d_%H%M')}",
-                help="Name for this historical snapshot"
+                help="Name for this historical snapshot",
+                key=f"{key_prefix}_snapshot_name" if key_prefix else "snapshot_name",
             )
         
         with col2:
             st.write("")
             st.write("")
-            if st.button("💾 Save", type="secondary", use_container_width=True):
+            if st.button(
+                "💾 Save",
+                type="secondary",
+                use_container_width=True,
+                key=f"{key_prefix}_snapshot_save" if key_prefix else "snapshot_save",
+            ):
                 if snapshot_name:
                     try:
                         db.save_moi_snapshot(
@@ -902,7 +912,16 @@ def analysis_tab(analysis_type):
                                 
                                 st.divider()
                                 
-                                download_buttons(results_df, f"{analysis_type}_batch", mapping, weights, max_values, thresholds, custom_thresholds)
+                                download_buttons(
+                                    results_df,
+                                    analysis_type,
+                                    mapping,
+                                    weights,
+                                    max_values,
+                                    thresholds,
+                                    custom_thresholds,
+                                    key_prefix=analysis_type.lower(),
+                                )
                                 
                                 if analysis_type == 'County' and mapping.get('dma'):
                                     st.divider()
