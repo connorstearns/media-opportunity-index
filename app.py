@@ -82,7 +82,7 @@ def display_home():
     The MOI combines six weighted components:
     
     1. **Revenue per Restaurant** (Direct) - Higher revenue indicates stronger market performance
-    2. **% Sales from Search** (Direct) - Higher search sales show strong digital intent
+    2. **Search Sales Opportunity** (Inverted) - Lower search sales means more room to grow search traffic
     3. **Meta Reach Opportunity** (Inverted) - Lower Meta saturation means more room to grow reach
     4. **TikTok Reach Opportunity** (Inverted) - Lower TikTok saturation means more room to grow reach
     5. **Untapped Digital Share** (Inverted) - Lower Google share indicates opportunity to capture digital market
@@ -497,10 +497,10 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
         norm_components['revenue_per_restaurant'] = pd.Series(0, index=processed_df.index)
     
     if weights['w_pct_sales_search'] > 0:
-        norm, max_val, warns = moi.normalize_direct(processed_df['pct_sales_search'])
+        norm, max_val, warns = moi.normalize_inverted(processed_df['pct_sales_search'])
         norm_components['pct_sales_search'] = norm
         max_values['pct_sales_search'] = max_val
-        warnings.extend([f"% Sales Search: {w}" for w in warns])
+        warnings.extend([f"% Sales Search Opportunity: {w}" for w in warns])
         processed_df['pct_sales_search_norm'] = norm
     else:
         processed_df['pct_sales_search_norm'] = 0
