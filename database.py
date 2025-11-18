@@ -45,8 +45,7 @@ def save_moi_snapshot(
     analysis_type: str,
     results_df: pd.DataFrame,
     grouping_col: str,
-    weights: dict,
-    reach_method: str
+    weights: dict
 ):
     """Save MOI results as a historical snapshot."""
     if not engine:
@@ -73,7 +72,7 @@ def save_moi_snapshot(
                 meta_reach=float(row['meta_reach']) if 'meta_reach' in row and pd.notna(row['meta_reach']) else None,
                 tiktok_reach=float(row['tiktok_reach']) if 'tiktok_reach' in row and pd.notna(row['tiktok_reach']) else None,
                 weights_config=weights,
-                snapshot_metadata={'reach_method': reach_method}
+                snapshot_metadata={}
             )
             db.add(snapshot)
         
