@@ -165,7 +165,9 @@ def clean_data_column(series: pd.Series, data_type: str) -> pd.Series:
     elif data_type == 'percentage':
         return series.apply(parse_percentage)
     elif data_type == 'reach':
-        return series.apply(normalize_reach_rate)
+        # Reach values come in like "8.80%" / "25.13%" or 8.8 / 0.088
+        # Treat them like percentages and convert to 0–1
+        return series.apply(parse_percentage)
     elif data_type == 'numeric':
         return pd.to_numeric(series, errors='coerce')
     else:
