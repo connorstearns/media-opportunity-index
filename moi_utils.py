@@ -43,21 +43,22 @@ COLUMN_VARIANTS = {
 def auto_detect_column(columns: List[str], field_type: str) -> Optional[str]:
     """
     Auto-detect column mapping based on predefined variants.
-    
-    Args:
-        columns: List of column names from the CSV
-        field_type: Type of field to detect (e.g., 'revenue_per_restaurant')
-    
-    Returns:
-        Detected column name or None
+
+    We iterate variants first, then columns, so the order in
+    COLUMN_VARIANTS controls priority. For example, for 'meta_reach'
+    we prefer 'Meta Reach Saturation' over 'Meta Reach'.
     """
     if field_type not in COLUMN_VARIANTS:
         return None
-    
+
     variants = COLUMN_VARIANTS[field_type]
-    for col in columns:
-        if col in variants:
-            return col
+
+    # Prefer the earliest variant in our list that actually exists
+    for variant in variants:
+        for col in columns:
+            if col == variant:
+                return col
+
     return None
 
 
