@@ -551,13 +551,13 @@ def create_methodology_pdf(
         "<b>Direct Normalization</b> (higher is better): value / max(value)",
         styles['Normal']
     ))
-    story.append(Paragraph("Applied to: Revenue per Restaurant, % Sales Search", styles['Normal']))
+    story.append(Paragraph("Applied to: Revenue per Restaurant", styles['Normal']))
     story.append(Spacer(1, 0.1*inch))
     story.append(Paragraph(
         "<b>Inverted Normalization</b> (lower represents opportunity): 1 - (value / max(value))",
         styles['Normal']
     ))
-    story.append(Paragraph("Applied to: Meta Reach Saturation, TikTok Reach Saturation, Digital Share, Ad Spend", styles['Normal']))
+    story.append(Paragraph("Applied to: % Sales Search, Meta Reach Saturation, TikTok Reach Saturation, Digital Share, Ad Spend", styles['Normal']))
     story.append(Spacer(1, 0.3*inch))
     
     story.append(Paragraph("Normalization Max Values", heading_style))
