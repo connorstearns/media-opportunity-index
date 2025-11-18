@@ -23,7 +23,8 @@ def init_session_state():
         st.session_state.current_weights = {
             'w_rev_per_restaurant': 25,
             'w_pct_sales_search': 20,
-            'w_reach_opportunity': 20,
+            'w_meta_reach_opportunity': 10,
+            'w_tiktok_reach_opportunity': 10,
             'w_untapped_digital_share': 15,
             'w_spend_opportunity': 20
         }
@@ -32,10 +33,38 @@ def init_session_state():
         st.session_state.weight_toggles = {
             'w_rev_per_restaurant': True,
             'w_pct_sales_search': True,
-            'w_reach_opportunity': True,
+            'w_meta_reach_opportunity': True,
+            'w_tiktok_reach_opportunity': True,
             'w_untapped_digital_share': True,
             'w_spend_opportunity': True
         }
+
+
+def create_dma_template():
+    """Create DMA template CSV with sample data."""
+    template_data = pd.DataFrame({
+        'DMA': ['New York', 'Los Angeles', 'Chicago', 'Dallas-Fort Worth', 'Houston'],
+        'Revenue per Restaurant': ['$5,000', '$4,500', '$4,200', '$3,800', '$3,500'],
+        '% Sales Search': ['25%', '30%', '22%', '28%', '24%'],
+        '% Sales Google': ['40%', '45%', '38%', '42%', '39%'],
+        'Ad Spend per Restaurant': ['$500', '$600', '$450', '$550', '$480'],
+        'Meta Reach': ['0.65', '0.70', '0.60', '0.68', '0.62'],
+        'TikTok Reach': ['0.55', '0.60', '0.50', '0.58', '0.52']
+    })
+    return template_data.to_csv(index=False).encode('utf-8')
+
+
+def create_county_template():
+    """Create County template CSV with sample data."""
+    template_data = pd.DataFrame({
+        'County': ['Los Angeles County', 'Cook County', 'Harris County', 'Maricopa County', 'San Diego County'],
+        'Revenue per Restaurant': ['$4,500', '$4,200', '$3,500', '$3,800', '$4,000'],
+        '% Sales Search': ['30%', '22%', '24%', '26%', '28%'],
+        '% Sales Google': ['45%', '38%', '39%', '41%', '43%'],
+        'Ad Spend per Restaurant': ['$600', '$450', '$480', '$520', '$550'],
+        'DMA': ['Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'San Diego']
+    })
+    return template_data.to_csv(index=False).encode('utf-8')
 
 
 def display_home():
@@ -50,13 +79,14 @@ def display_home():
     
     ### Key Components
     
-    The MOI combines five weighted components:
+    The MOI combines six weighted components:
     
     1. **Revenue per Restaurant** (Direct) - Higher revenue indicates stronger market performance
     2. **% Sales from Search** (Direct) - Higher search sales show strong digital intent
-    3. **Reach Opportunity** (Inverted) - Lower saturation means more room to grow reach
-    4. **Untapped Digital Share** (Inverted) - Lower Google share indicates opportunity to capture digital market
-    5. **Spend Opportunity** (Inverted) - Lower current spend suggests efficiency potential
+    3. **Meta Reach Opportunity** (Inverted) - Lower Meta saturation means more room to grow reach
+    4. **TikTok Reach Opportunity** (Inverted) - Lower TikTok saturation means more room to grow reach
+    5. **Untapped Digital Share** (Inverted) - Lower Google share indicates opportunity to capture digital market
+    6. **Spend Opportunity** (Inverted) - Lower current spend suggests efficiency potential
     
     ### How It Works
     
@@ -74,6 +104,38 @@ def display_home():
     - **Moderate** (33rd-66th percentile) - Standard opportunity markets
     - **Lower** (<33rd percentile) - Lower priority markets
     
+    ---
+    
+    ### 📥 CSV Templates
+    
+    Download these example CSV templates to see the required column format:
+    """)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        dma_template = create_dma_template()
+        st.download_button(
+            label="📄 Download DMA Template",
+            data=dma_template,
+            file_name="dma_template.csv",
+            mime="text/csv",
+            help="Example CSV with required columns for DMA analysis"
+        )
+        st.info("**DMA Template includes:** DMA, Revenue per Restaurant, % Sales Search, % Sales Google, Ad Spend per Restaurant, Meta Reach, TikTok Reach")
+    
+    with col2:
+        county_template = create_county_template()
+        st.download_button(
+            label="📄 Download County Template",
+            data=county_template,
+            file_name="county_template.csv",
+            mime="text/csv",
+            help="Example CSV with required columns for County analysis (Meta/TikTok optional)"
+        )
+        st.info("**County Template includes:** County, Revenue per Restaurant, % Sales Search, % Sales Google, Ad Spend per Restaurant, DMA (optional)")
+    
+    st.markdown("""
     ---
     
     Choose a tab above to get started with **DMA** or **County** analysis.
@@ -143,8 +205,9 @@ def column_mapping_ui(df, analysis_type):
     with col3:
         meta_auto = moi.auto_detect_column(df.columns, 'meta_reach')
         meta_default = columns.index(meta_auto) if meta_auto else 0
+        meta_label = "Meta Reach Saturation (optional for County)" if analysis_type == 'County' else "Meta Reach Saturation *"
         meta_col = st.selectbox(
-            "Meta Reach Saturation *",
+            meta_label,
             columns,
             index=meta_default,
             help="Meta/Facebook reach saturation (0-1 or 0-100%)"
@@ -153,8 +216,9 @@ def column_mapping_ui(df, analysis_type):
     with col4:
         tiktok_auto = moi.auto_detect_column(df.columns, 'tiktok_reach')
         tiktok_default = columns.index(tiktok_auto) if tiktok_auto else 0
+        tiktok_label = "TikTok Reach Saturation (optional for County)" if analysis_type == 'County' else "TikTok Reach Saturation *"
         tiktok_col = st.selectbox(
-            "TikTok Reach Saturation *",
+            tiktok_label,
             columns,
             index=tiktok_default,
             help="TikTok reach saturation (0-1 or 0-100%)"
@@ -183,7 +247,11 @@ def column_mapping_ui(df, analysis_type):
         'dma': dma_col
     }
     
-    required_fields = ['grouping', 'revenue', 'search', 'google', 'spend', 'meta', 'tiktok']
+    if analysis_type == 'County':
+        required_fields = ['grouping', 'revenue', 'search', 'google', 'spend']
+    else:
+        required_fields = ['grouping', 'revenue', 'search', 'google', 'spend', 'meta', 'tiktok']
+    
     missing_fields = [field for field in required_fields if not mapping[field]]
     
     if missing_fields:
@@ -202,7 +270,7 @@ def weights_settings_ui():
     with col1:
         st.write("**Component Weights** (adjust to prioritize different factors)")
         
-        weight_cols = st.columns(5)
+        weight_cols = st.columns(6)
         
         with weight_cols[0]:
             toggle_rev = st.checkbox(
@@ -237,22 +305,38 @@ def weights_settings_ui():
                 weight_search = 0
         
         with weight_cols[2]:
-            toggle_reach = st.checkbox(
+            toggle_meta_reach = st.checkbox(
                 "Include",
-                value=st.session_state.weight_toggles['w_reach_opportunity'],
-                key='toggle_reach'
+                value=st.session_state.weight_toggles['w_meta_reach_opportunity'],
+                key='toggle_meta_reach'
             )
-            weight_reach = st.slider(
-                "Reach Opportunity",
+            weight_meta_reach = st.slider(
+                "Meta Reach Opp",
                 0, 100,
-                st.session_state.current_weights['w_reach_opportunity'],
-                disabled=not toggle_reach,
-                key='slider_reach'
+                st.session_state.current_weights['w_meta_reach_opportunity'],
+                disabled=not toggle_meta_reach,
+                key='slider_meta_reach'
             )
-            if not toggle_reach:
-                weight_reach = 0
+            if not toggle_meta_reach:
+                weight_meta_reach = 0
         
         with weight_cols[3]:
+            toggle_tiktok_reach = st.checkbox(
+                "Include",
+                value=st.session_state.weight_toggles['w_tiktok_reach_opportunity'],
+                key='toggle_tiktok_reach'
+            )
+            weight_tiktok_reach = st.slider(
+                "TikTok Reach Opp",
+                0, 100,
+                st.session_state.current_weights['w_tiktok_reach_opportunity'],
+                disabled=not toggle_tiktok_reach,
+                key='slider_tiktok_reach'
+            )
+            if not toggle_tiktok_reach:
+                weight_tiktok_reach = 0
+        
+        with weight_cols[4]:
             toggle_digital = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_untapped_digital_share'],
@@ -268,7 +352,7 @@ def weights_settings_ui():
             if not toggle_digital:
                 weight_digital = 0
         
-        with weight_cols[4]:
+        with weight_cols[5]:
             toggle_spend = st.checkbox(
                 "Include",
                 value=st.session_state.weight_toggles['w_spend_opportunity'],
@@ -284,7 +368,7 @@ def weights_settings_ui():
             if not toggle_spend:
                 weight_spend = 0
         
-        total_weight = weight_rev + weight_search + weight_reach + weight_digital + weight_spend
+        total_weight = weight_rev + weight_search + weight_meta_reach + weight_tiktok_reach + weight_digital + weight_spend
         
         if total_weight > 0:
             st.info(f"📊 Total Weight: {total_weight} → Normalized to 1.00")
@@ -292,24 +376,6 @@ def weights_settings_ui():
             st.error("⚠️ At least one component must be enabled with weight > 0")
     
     with col2:
-        st.write("**Reach Blend Method**")
-        reach_method = st.radio(
-            "How to combine reach?",
-            ['average', 'weighted', 'max'],
-            format_func=lambda x: {
-                'average': 'Average',
-                'weighted': 'Weighted Avg',
-                'max': 'Max'
-            }[x]
-        )
-        
-        meta_weight = 0.5
-        if reach_method == 'weighted':
-            meta_weight = st.slider(
-                "Meta Weight %",
-                0, 100, 50
-            ) / 100.0
-        
         st.write("**Tier Thresholds**")
         use_custom_thresholds = st.checkbox(
             "Override auto percentiles",
@@ -341,7 +407,8 @@ def weights_settings_ui():
     weights = {
         'w_rev_per_restaurant': weight_rev,
         'w_pct_sales_search': weight_search,
-        'w_reach_opportunity': weight_reach,
+        'w_meta_reach_opportunity': weight_meta_reach,
+        'w_tiktok_reach_opportunity': weight_tiktok_reach,
         'w_untapped_digital_share': weight_digital,
         'w_spend_opportunity': weight_spend
     }
@@ -350,7 +417,8 @@ def weights_settings_ui():
     st.session_state.weight_toggles = {
         'w_rev_per_restaurant': toggle_rev,
         'w_pct_sales_search': toggle_search,
-        'w_reach_opportunity': toggle_reach,
+        'w_meta_reach_opportunity': toggle_meta_reach,
+        'w_tiktok_reach_opportunity': toggle_tiktok_reach,
         'w_untapped_digital_share': toggle_digital,
         'w_spend_opportunity': toggle_spend
     }
@@ -372,10 +440,10 @@ def weights_settings_ui():
                 st.session_state.current_weights = st.session_state.weight_presets[selected_preset].copy()
                 st.rerun()
     
-    return weights, reach_method, meta_weight, total_weight, custom_thresholds
+    return weights, total_weight, custom_thresholds
 
 
-def process_and_compute_moi(df, mapping, weights, reach_method, meta_weight, custom_thresholds=None):
+def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
     """Process data and compute MOI."""
     warnings = []
     
@@ -398,23 +466,22 @@ def process_and_compute_moi(df, mapping, weights, reach_method, meta_weight, cus
         df[mapping['spend']], 'currency'
     )
     
-    processed_df['meta_reach'] = moi.clean_data_column(
-        df[mapping['meta']], 'reach'
-    )
+    if mapping.get('meta') and mapping['meta']:
+        processed_df['meta_reach'] = moi.clean_data_column(
+            df[mapping['meta']], 'reach'
+        )
+    else:
+        processed_df['meta_reach'] = np.nan
     
-    processed_df['tiktok_reach'] = moi.clean_data_column(
-        df[mapping['tiktok']], 'reach'
-    )
+    if mapping.get('tiktok') and mapping['tiktok']:
+        processed_df['tiktok_reach'] = moi.clean_data_column(
+            df[mapping['tiktok']], 'reach'
+        )
+    else:
+        processed_df['tiktok_reach'] = np.nan
     
     if mapping.get('dma') and mapping['dma']:
         processed_df['dma'] = df[mapping['dma']]
-    
-    processed_df['reach_blend'] = moi.compute_reach_blend(
-        processed_df['meta_reach'],
-        processed_df['tiktok_reach'],
-        method=reach_method,
-        meta_weight=meta_weight
-    )
     
     norm_components = {}
     max_values = {}
@@ -439,15 +506,25 @@ def process_and_compute_moi(df, mapping, weights, reach_method, meta_weight, cus
         processed_df['pct_sales_search_norm'] = 0
         norm_components['pct_sales_search'] = pd.Series(0, index=processed_df.index)
     
-    if weights['w_reach_opportunity'] > 0:
-        norm, max_val, warns = moi.normalize_inverted(processed_df['reach_blend'])
-        norm_components['reach_opportunity'] = norm
-        max_values['reach_blend'] = max_val
-        warnings.extend([f"Reach Opportunity: {w}" for w in warns])
-        processed_df['reach_opportunity_norm'] = norm
+    if weights['w_meta_reach_opportunity'] > 0:
+        norm, max_val, warns = moi.normalize_inverted(processed_df['meta_reach'])
+        norm_components['meta_reach_opportunity'] = norm
+        max_values['meta_reach'] = max_val
+        warnings.extend([f"Meta Reach Opportunity: {w}" for w in warns])
+        processed_df['meta_reach_opportunity_norm'] = norm
     else:
-        processed_df['reach_opportunity_norm'] = 0
-        norm_components['reach_opportunity'] = pd.Series(0, index=processed_df.index)
+        processed_df['meta_reach_opportunity_norm'] = 0
+        norm_components['meta_reach_opportunity'] = pd.Series(0, index=processed_df.index)
+    
+    if weights['w_tiktok_reach_opportunity'] > 0:
+        norm, max_val, warns = moi.normalize_inverted(processed_df['tiktok_reach'])
+        norm_components['tiktok_reach_opportunity'] = norm
+        max_values['tiktok_reach'] = max_val
+        warnings.extend([f"TikTok Reach Opportunity: {w}" for w in warns])
+        processed_df['tiktok_reach_opportunity_norm'] = norm
+    else:
+        processed_df['tiktok_reach_opportunity_norm'] = 0
+        norm_components['tiktok_reach_opportunity'] = pd.Series(0, index=processed_df.index)
     
     if weights['w_untapped_digital_share'] > 0:
         norm, max_val, warns = moi.normalize_inverted(processed_df['pct_sales_google'])
@@ -472,7 +549,8 @@ def process_and_compute_moi(df, mapping, weights, reach_method, meta_weight, cus
     weight_mapping = {
         'revenue_per_restaurant': weights['w_rev_per_restaurant'],
         'pct_sales_search': weights['w_pct_sales_search'],
-        'reach_opportunity': weights['w_reach_opportunity'],
+        'meta_reach_opportunity': weights['w_meta_reach_opportunity'],
+        'tiktok_reach_opportunity': weights['w_tiktok_reach_opportunity'],
         'untapped_digital_share': weights['w_untapped_digital_share'],
         'spend_opportunity': weights['w_spend_opportunity']
     }
@@ -589,7 +667,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
     return display_df
 
 
-def download_buttons(results_df, analysis_type, mapping=None, weights=None, reach_method=None, max_values=None, thresholds=None, custom_thresholds=None):
+def download_buttons(results_df, analysis_type, mapping=None, weights=None, max_values=None, thresholds=None, custom_thresholds=None):
     """Create download buttons for CSV and XLSX."""
     st.subheader("⬇️ Download Results")
     
@@ -614,11 +692,10 @@ def download_buttons(results_df, analysis_type, mapping=None, weights=None, reac
         )
     
     with col3:
-        if weights and max_values and thresholds and reach_method:
+        if weights and max_values and thresholds:
             pdf_data = moi.create_methodology_pdf(
                 analysis_type=analysis_type,
                 weights=weights,
-                reach_method=reach_method,
                 max_values=max_values,
                 thresholds=thresholds,
                 num_markets=len(results_df),
@@ -631,7 +708,7 @@ def download_buttons(results_df, analysis_type, mapping=None, weights=None, reac
                 mime="application/pdf"
             )
     
-    if db.engine and mapping and weights and reach_method:
+    if db.engine and mapping and weights:
         st.divider()
         st.subheader("💾 Save Historical Snapshot")
         
@@ -654,8 +731,7 @@ def download_buttons(results_df, analysis_type, mapping=None, weights=None, reac
                             analysis_type=analysis_type,
                             results_df=results_df,
                             grouping_col=mapping['grouping'],
-                            weights=weights,
-                            reach_method=reach_method
+                            weights=weights
                         )
                         st.success(f"✅ Snapshot '{snapshot_name}' saved successfully!")
                     except Exception as e:
@@ -664,7 +740,7 @@ def download_buttons(results_df, analysis_type, mapping=None, weights=None, reac
                     st.warning("Please enter a snapshot name")
 
 
-def county_dma_rollup(results_df, mapping, weights, reach_method, meta_weight, custom_thresholds=None):
+def county_dma_rollup(results_df, mapping, weights, custom_thresholds=None):
     """Perform County to DMA rollup."""
     st.subheader("🔄 County → DMA Rollup")
     
@@ -711,8 +787,6 @@ def county_dma_rollup(results_df, mapping, weights, reach_method, meta_weight, c
                 dma_df,
                 temp_mapping,
                 weights,
-                reach_method,
-                meta_weight,
                 custom_thresholds
             )
             
@@ -791,7 +865,7 @@ def analysis_tab(analysis_type):
                 if mapping:
                     st.divider()
                     
-                    weights, reach_method, meta_weight, total_weight, custom_thresholds = weights_settings_ui()
+                    weights, total_weight, custom_thresholds = weights_settings_ui()
                     
                     st.divider()
                     
@@ -799,7 +873,7 @@ def analysis_tab(analysis_type):
                         if st.button(f"🚀 Compute MOI for Combined {analysis_type}", type="primary", use_container_width=True):
                             with st.spinner("Computing MOI for combined dataset..."):
                                 results_df, warnings, max_values, thresholds = process_and_compute_moi(
-                                    combined_df, mapping, weights, reach_method, meta_weight, custom_thresholds
+                                    combined_df, mapping, weights, custom_thresholds
                                 )
                                 
                                 if warnings:
@@ -813,11 +887,11 @@ def analysis_tab(analysis_type):
                                 
                                 st.divider()
                                 
-                                download_buttons(results_df, f"{analysis_type}_batch", mapping, weights, reach_method, max_values, thresholds, custom_thresholds)
+                                download_buttons(results_df, f"{analysis_type}_batch", mapping, weights, max_values, thresholds, custom_thresholds)
                                 
                                 if analysis_type == 'County' and mapping.get('dma'):
                                     st.divider()
-                                    county_dma_rollup(results_df, mapping, weights, reach_method, meta_weight, custom_thresholds)
+                                    county_dma_rollup(results_df, mapping, weights, custom_thresholds)
                     else:
                         st.error("⚠️ Please enable at least one component with weight > 0")
             
@@ -841,7 +915,7 @@ def analysis_tab(analysis_type):
             if mapping:
                 st.divider()
                 
-                weights, reach_method, meta_weight, total_weight, custom_thresholds = weights_settings_ui()
+                weights, total_weight, custom_thresholds = weights_settings_ui()
                 
                 st.divider()
                 
@@ -849,7 +923,7 @@ def analysis_tab(analysis_type):
                     if st.button(f"🚀 Compute MOI for {analysis_type}", type="primary", use_container_width=True):
                         with st.spinner("Computing MOI..."):
                             results_df, warnings, max_values, thresholds = process_and_compute_moi(
-                                df, mapping, weights, reach_method, meta_weight, custom_thresholds
+                                df, mapping, weights, custom_thresholds
                             )
                             
                             if warnings:
@@ -863,11 +937,11 @@ def analysis_tab(analysis_type):
                             
                             st.divider()
                             
-                            download_buttons(results_df, analysis_type, mapping, weights, reach_method, max_values, thresholds, custom_thresholds)
+                            download_buttons(results_df, analysis_type, mapping, weights, max_values, thresholds, custom_thresholds)
                             
                             if analysis_type == 'County' and mapping.get('dma'):
                                 st.divider()
-                                county_dma_rollup(results_df, mapping, weights, reach_method, meta_weight, custom_thresholds)
+                                county_dma_rollup(results_df, mapping, weights, custom_thresholds)
                 else:
                     st.error("⚠️ Please enable at least one component with weight > 0")
         
