@@ -21,7 +21,7 @@ def init_session_state():
     
     if 'current_weights' not in st.session_state:
         st.session_state.current_weights = {
-            'w_rev_per_restaurant': 25,
+            'w_rev_per_location': 25,
             'w_pct_sales_search': 20,
             'w_meta_reach_opportunity': 10,
             'w_tiktok_reach_opportunity': 10,
@@ -31,7 +31,7 @@ def init_session_state():
     
     if 'weight_toggles' not in st.session_state:
         st.session_state.weight_toggles = {
-            'w_rev_per_restaurant': True,
+            'w_rev_per_location': True,
             'w_pct_sales_search': True,
             'w_meta_reach_opportunity': True,
             'w_tiktok_reach_opportunity': True,
@@ -44,10 +44,10 @@ def create_dma_template():
     """Create DMA template CSV with sample data."""
     template_data = pd.DataFrame({
         'DMA': ['New York', 'Los Angeles', 'Chicago', 'Dallas-Fort Worth', 'Houston'],
-        'Revenue per Restaurant': ['$5,000', '$4,500', '$4,200', '$3,800', '$3,500'],
+        'Revenue per location': ['$5,000', '$4,500', '$4,200', '$3,800', '$3,500'],
         '% Sales Search': ['25%', '30%', '22%', '28%', '24%'],
         '% Sales Google': ['40%', '45%', '38%', '42%', '39%'],
-        'Ad Spend per Restaurant': ['$500', '$600', '$450', '$550', '$480'],
+        'Ad Spend per location': ['$500', '$600', '$450', '$550', '$480'],
         'Meta Reach': ['0.65', '0.70', '0.60', '0.68', '0.62'],
         'TikTok Reach': ['0.55', '0.60', '0.50', '0.58', '0.52']
     })
@@ -58,10 +58,10 @@ def create_county_template():
     """Create County template CSV with sample data."""
     template_data = pd.DataFrame({
         'County': ['Los Angeles County', 'Cook County', 'Harris County', 'Maricopa County', 'San Diego County'],
-        'Revenue per Restaurant': ['$4,500', '$4,200', '$3,500', '$3,800', '$4,000'],
+        'Revenue per location': ['$4,500', '$4,200', '$3,500', '$3,800', '$4,000'],
         '% Sales Search': ['30%', '22%', '24%', '26%', '28%'],
         '% Sales Google': ['45%', '38%', '39%', '41%', '43%'],
-        'Ad Spend per Restaurant': ['$600', '$450', '$480', '$520', '$550'],
+        'Ad Spend per location': ['$600', '$450', '$480', '$520', '$550'],
         'DMA': ['Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'San Diego']
     })
     return template_data.to_csv(index=False).encode('utf-8')
@@ -81,7 +81,7 @@ def display_home():
     
     The MOI combines six weighted components:
     
-    1. **Revenue per Restaurant** (Direct) - Higher revenue indicates stronger market performance
+    1. **Revenue per location** (Direct) - Higher revenue indicates stronger market performance
     2. **Search Sales Opportunity** (Inverted) - Lower search sales means more room to grow search traffic
     3. **Meta Reach Opportunity** (Inverted) - Lower Meta saturation means more room to grow reach
     4. **TikTok Reach Opportunity** (Inverted) - Lower TikTok saturation means more room to grow reach
@@ -122,7 +122,7 @@ def display_home():
             mime="text/csv",
             help="Example CSV with required columns for DMA analysis"
         )
-        st.info("**DMA Template includes:** DMA, Revenue per Restaurant, % Sales Search, % Sales Google, Ad Spend per Restaurant, Meta Reach, TikTok Reach")
+        st.info("**DMA Template includes:** DMA, Revenue per location, % Sales Search, % Sales Google, Ad Spend per location, Meta Reach, TikTok Reach")
     
     with col2:
         county_template = create_county_template()
@@ -133,7 +133,7 @@ def display_home():
             mime="text/csv",
             help="Example CSV with required columns for County analysis (Meta/TikTok optional)"
         )
-        st.info("**County Template includes:** County, Revenue per Restaurant, % Sales Search, % Sales Google, Ad Spend per Restaurant, DMA (optional)")
+        st.info("**County Template includes:** County, Revenue per location, % Sales Search, % Sales Google, Ad Spend per location, DMA (optional)")
     
     st.markdown("""
     ---
@@ -163,13 +163,13 @@ def column_mapping_ui(df, analysis_type):
             help=f"Select the column containing {analysis_type} names"
         )
         
-        revenue_auto = moi.auto_detect_column(df.columns, 'revenue_per_restaurant')
+        revenue_auto = moi.auto_detect_column(df.columns, 'revenue_per_location')
         revenue_default = columns.index(revenue_auto) if revenue_auto else 0
         revenue_col = st.selectbox(
-            "Revenue per Restaurant *",
+            "Revenue per location *",
             columns,
             index=revenue_default,
-            help="Revenue or sales per restaurant/store"
+            help="Revenue or sales per location/store"
         )
         
         search_auto = moi.auto_detect_column(df.columns, 'pct_sales_search')
@@ -194,10 +194,10 @@ def column_mapping_ui(df, analysis_type):
         spend_auto = moi.auto_detect_column(df.columns, 'ad_spend')
         spend_default = columns.index(spend_auto) if spend_auto else 0
         spend_col = st.selectbox(
-            "Ad Spend per Restaurant *",
+            "Ad Spend per location *",
             columns,
             index=spend_default,
-            help="Advertising spend per restaurant/store"
+            help="Advertising spend per location/store"
         )
     
     col3, col4 = st.columns(2)
@@ -279,13 +279,13 @@ def weights_settings_ui(key_prefix: str = ""):
         with weight_cols[0]:
             toggle_rev = st.checkbox(
                 "Include",
-                value=st.session_state.weight_toggles['w_rev_per_restaurant'],
+                value=st.session_state.weight_toggles['w_rev_per_location'],
                 key=k('toggle_rev')
             )
             weight_rev = st.slider(
-                "Revenue/Restaurant",
+                "Revenue/location",
                 0, 100,
-                st.session_state.current_weights['w_rev_per_restaurant'],
+                st.session_state.current_weights['w_rev_per_location'],
                 disabled=not toggle_rev,
                 key=k('slider_rev')
             )
@@ -410,7 +410,7 @@ def weights_settings_ui(key_prefix: str = ""):
             }
     
     weights = {
-        'w_rev_per_restaurant': weight_rev,
+        'w_rev_per_location': weight_rev,
         'w_pct_sales_search': weight_search,
         'w_meta_reach_opportunity': weight_meta_reach,
         'w_tiktok_reach_opportunity': weight_tiktok_reach,
@@ -420,7 +420,7 @@ def weights_settings_ui(key_prefix: str = ""):
     
     st.session_state.current_weights = weights
     st.session_state.weight_toggles = {
-        'w_rev_per_restaurant': toggle_rev,
+        'w_rev_per_location': toggle_rev,
         'w_pct_sales_search': toggle_search,
         'w_meta_reach_opportunity': toggle_meta_reach,
         'w_tiktok_reach_opportunity': toggle_tiktok_reach,
@@ -459,7 +459,7 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
     processed_df = pd.DataFrame()
     processed_df[mapping['grouping']] = df[mapping['grouping']]
     
-    processed_df['revenue_per_restaurant'] = moi.clean_data_column(
+    processed_df['revenue_per_location'] = moi.clean_data_column(
         df[mapping['revenue']], 'currency'
     )
     
@@ -471,7 +471,7 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
         df[mapping['google']], 'percentage'
     )
     
-    processed_df['ad_spend_per_restaurant'] = moi.clean_data_column(
+    processed_df['ad_spend_per_location'] = moi.clean_data_column(
         df[mapping['spend']], 'currency'
     )
     
@@ -495,15 +495,15 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
     norm_components = {}
     max_values = {}
     
-    if weights['w_rev_per_restaurant'] > 0:
-        norm, max_val, warns = moi.normalize_direct(processed_df['revenue_per_restaurant'])
-        norm_components['revenue_per_restaurant'] = norm
-        max_values['revenue_per_restaurant'] = max_val
+    if weights['w_rev_per_location'] > 0:
+        norm, max_val, warns = moi.normalize_direct(processed_df['revenue_per_location'])
+        norm_components['revenue_per_location'] = norm
+        max_values['revenue_per_location'] = max_val
         warnings.extend([f"Revenue: {w}" for w in warns])
-        processed_df['revenue_per_restaurant_norm'] = norm
+        processed_df['revenue_per_location_norm'] = norm
     else:
-        processed_df['revenue_per_restaurant_norm'] = 0
-        norm_components['revenue_per_restaurant'] = pd.Series(0, index=processed_df.index)
+        processed_df['revenue_per_location_norm'] = 0
+        norm_components['revenue_per_location'] = pd.Series(0, index=processed_df.index)
     
     if weights['w_pct_sales_search'] > 0:
         norm, max_val, warns = moi.normalize_inverted(processed_df['pct_sales_search'])
@@ -546,9 +546,9 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
         norm_components['untapped_digital_share'] = pd.Series(0, index=processed_df.index)
     
     if weights['w_spend_opportunity'] > 0:
-        norm, max_val, warns = moi.normalize_inverted(processed_df['ad_spend_per_restaurant'])
+        norm, max_val, warns = moi.normalize_inverted(processed_df['ad_spend_per_location'])
         norm_components['spend_opportunity'] = norm
-        max_values['ad_spend_per_restaurant'] = max_val
+        max_values['ad_spend_per_location'] = max_val
         warnings.extend([f"Spend Opportunity: {w}" for w in warns])
         processed_df['spend_opportunity_norm'] = norm
     else:
@@ -556,7 +556,7 @@ def process_and_compute_moi(df, mapping, weights, custom_thresholds=None):
         norm_components['spend_opportunity'] = pd.Series(0, index=processed_df.index)
     
     weight_mapping = {
-        'revenue_per_restaurant': weights['w_rev_per_restaurant'],
+        'revenue_per_location': weights['w_rev_per_location'],
         'pct_sales_search': weights['w_pct_sales_search'],
         'meta_reach_opportunity': weights['w_meta_reach_opportunity'],
         'tiktok_reach_opportunity': weights['w_tiktok_reach_opportunity'],
@@ -611,7 +611,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
     
     display_cols = [
         grouping_col, 'MOI', 'MOI_Index', 'Tier',
-        'revenue_per_restaurant_norm',
+        'revenue_per_location_norm',
         'pct_sales_search_norm',
         'meta_reach_opportunity_norm',
         'tiktok_reach_opportunity_norm',
@@ -627,7 +627,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
         display_df.style.format({
             'MOI': '{:.4f}',
             'MOI_Index': '{:.2f}',
-            'revenue_per_restaurant_norm': '{:.4f}',
+            'revenue_per_location_norm': '{:.4f}',
             'pct_sales_search_norm': '{:.4f}',
             'meta_reach_opportunity_norm': '{:.4f}',
             'tiktok_reach_opportunity_norm': '{:.4f}',
@@ -665,7 +665,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
         st.write("**Revenue vs MOI by Tier**")
         fig_scatter = px.scatter(
             results_df,
-            x='revenue_per_restaurant',
+            x='revenue_per_location',
             y='MOI',
             color='Tier',
             hover_data=[grouping_col],
@@ -675,7 +675,7 @@ def display_results(results_df, grouping_col, max_values, thresholds):
                 'Moderate': '#ff7f0e',
                 'Lower': '#d62728'
             },
-            title="Revenue per Restaurant vs MOI"
+            title="Revenue per location vs MOI"
         )
         fig_scatter.update_layout(height=400)
         st.plotly_chart(fig_scatter, use_container_width=True)
@@ -792,10 +792,10 @@ def county_dma_rollup(results_df, mapping, weights, custom_thresholds=None):
                 results_df,
                 county_col=mapping['grouping'],
                 dma_col='dma',
-                revenue_col='revenue_per_restaurant',
+                revenue_col='revenue_per_location',
                 pct_search_col='pct_sales_search',
                 pct_google_col='pct_sales_google',
-                ad_spend_col='ad_spend_per_restaurant',
+                ad_spend_col='ad_spend_per_location',
                 meta_reach_col='meta_reach' if 'meta_reach' in results_df.columns else None,
                 tiktok_reach_col='tiktok_reach' if 'tiktok_reach' in results_df.columns else None,
                 revenue_agg=revenue_agg,
